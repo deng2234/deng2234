@@ -1,18 +1,44 @@
 import streamlit as st
-from openai import OpenAI
 
 # 页面配置
-st.set_page_config(page_title="忽左忽右·AI全能排版", layout="wide")
+st.set_page_config(page_title="忽左忽右公众号排版工具", layout="wide")
 
-# --- 1. 样式函数：保持原生紧凑感 ---
+st.title("🎙️ 忽左忽右公众号排版工具")
+
+# 侧边栏：全局设置
+with st.sidebar:
+    st.header("👤 全局角色定义")
+    host_name = st.text_input("主持人姓名", value="程衍樑")
+    guest_name = st.text_input("嘉宾姓名", value="刘愿")
+    other_guests = st.text_input("其他角色 (中文逗号隔开)", value="")
+    
+    st.header("🎨 全局颜色配置")
+    color_host = st.color_picker("主持人背景色", "#79B9D9") 
+    color_guest = st.color_picker("嘉宾背景色", "#47B04B")
+    
+    st.markdown("---")
+    st.write("📌 **样式标准：**")
+    st.write("- 模块间距：自动留空行衔接")
+    st.write("- 人名：15px 原生直角色块")
+    st.write("- 正文：14px / 行距2.0 / 纯黑")
+
+# 核心渲染逻辑
 def render_block_html(main_title, raw_script, host, guest, others, h_color, g_color):
-    if not raw_script.strip() and not main_title.strip(): return ""
+    if not raw_script.strip() and not main_title.strip():
+        return ""
+        
     all_guests = [guest] + [x.strip() for x in others.split('，') if x.strip()]
     lines = raw_script.split('\n')
     
-    # 标题样式：深蓝色，16px，居中
-    html = f'<p style="text-align: center; margin: 20px 0 0 0; line-height: 1.5;"><span style="color: #3E8AB8; font-size: 16px; font-weight: bold; letter-spacing: 1.5px;">{main_title}</span></p>'
-    html += '<p style="min-height: 1.5em; margin: 0;"></p>' * 3
+    # 标题部分
+    html = f"""
+    <p style="text-align: center; margin: 20px 0 0 0; line-height: 1.5;">
+        <span style="color: #3E8AB8; font-size: 16px; font-weight: bold; letter-spacing: 1.5px;">{main_title}</span>
+    </p>
+    <p style="min-height: 1.5em; margin: 0;"></p>
+    <p style="min-height: 1.5em; margin: 0;"></p>
+    <p style="min-height: 1.5em; margin: 0;"></p>
+    """
     
     for line in lines:
         clean_line = line.strip()
@@ -25,33 +51,71 @@ def render_block_html(main_title, raw_script, host, guest, others, h_color, g_co
         
         if is_host or is_guest:
             name = host if is_host else (clean_line.replace('：','').replace(':',''))
-            current_bg = h_color if is_host else g_color
-            # 紧凑直角背景
-            html += f'<p style="margin-top: 28px; margin-bottom: 10px; line-height: 1;"><span style="background-color: {current_bg}; color: #ffffff; font-size: 15px; font-weight: bold; padding: 1px 2px;">{name}</span></p>'
+            bg_color = h_color if is_host else g_color
+            html += f"""
+            <p style="margin-top: 28px; margin-bottom: 10px; line-height: 1;">
+                <span style="background-color: {bg_color}; color: #ffffff; font-size: 15px; font-weight: bold; padding: 1px 2px;">{name}</span>
+            </p>
+            """
         else:
-            # 正文：2.0倍行距，14px
-            html += f'<p style="margin: 0; text-align: justify; line-height: 200%; letter-spacing: 0.5px;"><span style="font-size: 14px; color: #000000;">{clean_line}</span></p>'
+            html += f"""
+            <p style="margin: 0; text-align: justify; line-height: 200%; letter-spacing: 0.5px;">
+                <span style="font-size: 14px; color: #000000;">{clean_line}</span>
+            </p>
+            """
+    # 模块结尾增加额外空行，防止模块间粘连
+    html += '<p style="min-height: 2em; margin: 0;"></p>'
     return html
 
-# --- 2. AI 校对核心逻辑 ---
-def ai_proofread(text, api_key):
-    if not api_key:
-        st.error("❌ 请先在左侧输入 DeepSeek API Key")
-        return text
+# 存储各模块生成的 HTML
+all_blocks_html = []
+
+# 渲染三个分段输入框
+for i in range(1, 4):
+    st.subheader(f"📍 模块 {i}")
+    col_in, col_pre = st.columns([1, 1])
     
-    client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
-    prompt = """你是一个专业的播客文稿校对员。要求：1.去掉冗余口语（嗯、那么、就是等）；2.修正错别字；3.严格保留原意和逻辑；4.直接输出修改后的文本，不要任何解释。"""
+    with col_in:
+        m_title = st.text_input(f"标题 {i}", value=f"标题内容 {i}", key=f"t_{i}")
+        m_script = st.text_area(f"文稿 {i}", height=250, key=f"s_{i}")
+    
+    # 生成该模块 HTML 并存入列表
+    current_html = render_block_html(m_title, m_script, host_name, guest_name, other_guests, color_host, color_guest)
+    all_blocks_html.append(current_html)
+    
+    with col_pre:
+        st.caption("分模块预览")
+        st.components.v1.html(f"""<div style="border:1px solid #eee; padding:10px; background:white;">{current_html if current_html else '等待输入...'}</div>""", height=350, scrolling=True)
+    st.markdown("---")
 
-    try:
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[{"role": "system", "content": prompt}, {"role": "user", "content": text}],
-            temperature=0.3
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        st.error(f"AI 调用失败: {e}")
-        return text
+# --- 底部：全文合并区域 ---
+st.header("🚀 全文合并一键导出")
+full_combined_html = "".join(all_blocks_html)
 
-# --- 3. 界面初始化 ---
-st
+if full_combined_html.strip():
+    st.components.v1.html(f"""
+        <div style="margin-bottom: 20px; text-align: center;">
+            <button onclick="copyFull()" style="padding: 15px 40px; background-color: #07c160; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(7,193,96,0.3);">
+                🔥 点击一键复制“全文”（模块1+2+3）
+            </button>
+            <p id="full_msg" style="color: #07c160; font-weight: bold; margin-top: 10px;"></p>
+        </div>
+        <div style="border: 2px solid #07c160; padding: 20px; background: white;">
+            <div id="full_area">{full_combined_html}</div>
+        </div>
+        <script>
+        function copyFull() {{
+            const node = document.getElementById('full_area');
+            const range = document.createRange();
+            range.selectNode(node);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            document.getElementById('full_msg').innerText = "✅ 全文已成功复制！可以直接去公众号后台粘贴。";
+            setTimeout(() => {{ document.getElementById('full_msg').innerText = ""; }}, 3000);
+            window.getSelection().removeAllRanges();
+        }}
+        </script>
+    """, height=1000, scrolling=True)
+else:
+    st.info("在上方模块输入内容后，此处将自动生成合并预览。")
