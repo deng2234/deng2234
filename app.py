@@ -3,7 +3,7 @@ import streamlit as st
 # 页面配置
 st.set_page_config(page_title="忽左忽右·全能排版工具", layout="wide")
 
-st.title("🎙️ 播客排版工具 (三合一合并版)")
+st.title("🎙️ 忽左忽右公众号排版工具")
 
 # 侧边栏：全局设置
 with st.sidebar:
