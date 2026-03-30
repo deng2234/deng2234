@@ -30,15 +30,18 @@ def render_block_html(main_title, raw_script, host, guest, others, h_color, g_co
     all_guests = [guest] + [x.strip() for x in others.split('，') if x.strip()]
     lines = raw_script.split('\n')
     
-    # 标题部分
+    # --- 仅修改此处的标题样式 ---
+    # 增加了 font-family 堆栈 (Optima 和 PingFang SC 是高级感的来源)
+    # 将 letter-spacing 提升至 2px，line-height 提升至 1.6
     html = f"""
-    <p style="text-align: center; margin: 20px 0 0 0; line-height: 1.5;">
-        <span style="color: #3E8AB8; font-size: 16px; font-weight: bold; letter-spacing: 1.5px;">{main_title}</span>
+    <p style="text-align: center; margin: 20px 0 0 0; line-height: 1.6;">
+        <span style="color: #3E8AB8; font-size: 16px; font-weight: bold; letter-spacing: 2px; font-family: Optima, 'PingFang SC', 'Microsoft YaHei', sans-serif;">{main_title}</span>
     </p>
     <p style="min-height: 1.5em; margin: 0;"></p>
     <p style="min-height: 1.5em; margin: 0;"></p>
     <p style="min-height: 1.5em; margin: 0;"></p>
     """
+    # --------------------------
     
     for line in lines:
         clean_line = line.strip()
@@ -112,10 +115,4 @@ if full_combined_html.strip():
             window.getSelection().addRange(range);
             document.execCommand('copy');
             document.getElementById('full_msg').innerText = "✅ 全文已成功复制！可以直接去公众号后台粘贴。";
-            setTimeout(() => {{ document.getElementById('full_msg').innerText = ""; }}, 3000);
-            window.getSelection().removeAllRanges();
-        }}
-        </script>
-    """, height=1000, scrolling=True)
-else:
-    st.info("在上方模块输入内容后，此处将自动生成合并预览。")
+            setTimeout(() => {{ document.getElementById('full_msg').innerText = ""; }},
