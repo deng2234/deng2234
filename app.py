@@ -17,8 +17,8 @@ with st.sidebar:
     color_guest = st.color_picker("嘉宾背景色", "#47B04B")
     
     st.markdown("---")
-    st.write("📌 **样式标准（已更新标题）：**")
-    st.write("- 标题：16px / Optima+萍方 / 2px 间距")
+    st.write("📌 **样式标准：**")
+    st.write("- 标题：16px / #499ec4 / 2px 间距")
     st.write("- 人名：15px 原生直角色块")
     st.write("- 正文：14px / 行距2.0 / 纯黑")
 
@@ -30,8 +30,8 @@ def render_block_html(main_title, raw_script, host, guest, others, h_color, g_co
     all_guests = [guest] + [x.strip() for x in others.split('，') if x.strip()]
     lines = raw_script.split('\n')
     
-    # --- 标题部分：采用你最满意的 Optima + 2px 间距风格 ---
-    title_style = "color: #3E8AB8; font-size: 16px; font-weight: bold; letter-spacing: 2px; font-family: Optima, 'PingFang SC', sans-serif;"
+    # --- 标题样式：已更新颜色为 #499ec4 ---
+    title_style = "color: #499ec4; font-size: 16px; font-weight: bold; letter-spacing: 2px; font-family: Optima, 'PingFang SC', sans-serif;"
     html = f'<p style="text-align: center; margin: 20px 0 0 0; line-height: 1.6;"><span style="{title_style}">{main_title}</span></p>'
     html += '<p style="min-height: 1.5em; margin: 0;"></p>' * 3
     
@@ -78,7 +78,6 @@ st.header("🚀 全文合并一键导出")
 full_combined_html = "".join(all_blocks_html)
 
 if full_combined_html.strip():
-    # 这里的 JS 代码块使用了分段构建，避免三引号导致的语法错误
     copy_button_html = f"""
     <div style="text-align: center; margin-bottom: 20px;">
         <button onclick="copyFull()" style="padding: 15px 40px; background-color: #07c160; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(7,193,96,0.3);">
