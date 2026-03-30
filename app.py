@@ -17,8 +17,8 @@ with st.sidebar:
     color_guest = st.color_picker("嘉宾背景色", "#47B04B")
     
     st.markdown("---")
-    st.write("📌 **样式标准：**")
-    st.write("- 模块间距：自动留空行衔接")
+    st.write("📌 **样式标准（已更新标题）：**")
+    st.write("- 标题：16px / Optima+萍方 / 2px 间距")
     st.write("- 人名：15px 原生直角色块")
     st.write("- 正文：14px / 行距2.0 / 纯黑")
 
@@ -30,18 +30,10 @@ def render_block_html(main_title, raw_script, host, guest, others, h_color, g_co
     all_guests = [guest] + [x.strip() for x in others.split('，') if x.strip()]
     lines = raw_script.split('\n')
     
-    # --- 仅修改此处的标题样式 ---
-    # 增加了 font-family 堆栈 (Optima 和 PingFang SC 是高级感的来源)
-    # 将 letter-spacing 提升至 2px，line-height 提升至 1.6
-    html = f"""
-    <p style="text-align: center; margin: 20px 0 0 0; line-height: 1.6;">
-        <span style="color: #3E8AB8; font-size: 16px; font-weight: bold; letter-spacing: 2px; font-family: Optima, 'PingFang SC', 'Microsoft YaHei', sans-serif;">{main_title}</span>
-    </p>
-    <p style="min-height: 1.5em; margin: 0;"></p>
-    <p style="min-height: 1.5em; margin: 0;"></p>
-    <p style="min-height: 1.5em; margin: 0;"></p>
-    """
-    # --------------------------
+    # --- 标题部分：采用你最满意的 Optima + 2px 间距风格 ---
+    title_style = "color: #3E8AB8; font-size: 16px; font-weight: bold; letter-spacing: 2px; font-family: Optima, 'PingFang SC', sans-serif;"
+    html = f'<p style="text-align: center; margin: 20px 0 0 0; line-height: 1.6;"><span style="{title_style}">{main_title}</span></p>'
+    html += '<p style="min-height: 1.5em; margin: 0;"></p>' * 3
     
     for line in lines:
         clean_line = line.strip()
@@ -55,25 +47,16 @@ def render_block_html(main_title, raw_script, host, guest, others, h_color, g_co
         if is_host or is_guest:
             name = host if is_host else (clean_line.replace('：','').replace(':',''))
             bg_color = h_color if is_host else g_color
-            html += f"""
-            <p style="margin-top: 28px; margin-bottom: 10px; line-height: 1;">
-                <span style="background-color: {bg_color}; color: #ffffff; font-size: 15px; font-weight: bold; padding: 1px 2px;">{name}</span>
-            </p>
-            """
+            html += f'<p style="margin-top: 28px; margin-bottom: 10px; line-height: 1;"><span style="background-color: {bg_color}; color: #ffffff; font-size: 15px; font-weight: bold; padding: 1px 2px;">{name}</span></p>'
         else:
-            html += f"""
-            <p style="margin: 0; text-align: justify; line-height: 200%; letter-spacing: 0.5px;">
-                <span style="font-size: 14px; color: #000000;">{clean_line}</span>
-            </p>
-            """
-    # 模块结尾增加额外空行，防止模块间粘连
+            html += f'<p style="margin: 0; text-align: justify; line-height: 200%; letter-spacing: 0.5px;"><span style="font-size: 14px; color: #000000;">{clean_line}</span></p>'
+            
     html += '<p style="min-height: 2em; margin: 0;"></p>'
     return html
 
-# 存储各模块生成的 HTML
+# 存储 HTML
 all_blocks_html = []
 
-# 渲染三个分段输入框
 for i in range(1, 4):
     st.subheader(f"📍 模块 {i}")
     col_in, col_pre = st.columns([1, 1])
@@ -82,37 +65,44 @@ for i in range(1, 4):
         m_title = st.text_input(f"标题 {i}", value=f"标题内容 {i}", key=f"t_{i}")
         m_script = st.text_area(f"文稿 {i}", height=250, key=f"s_{i}")
     
-    # 生成该模块 HTML 并存入列表
     current_html = render_block_html(m_title, m_script, host_name, guest_name, other_guests, color_host, color_guest)
     all_blocks_html.append(current_html)
     
     with col_pre:
         st.caption("分模块预览")
-        st.components.v1.html(f"""<div style="border:1px solid #eee; padding:10px; background:white;">{current_html if current_html else '等待输入...'}</div>""", height=350, scrolling=True)
+        st.components.v1.html(f'<div style="border:1px solid #eee; padding:10px; background:white;">{current_html if current_html else "等待输入..."}</div>', height=350, scrolling=True)
     st.markdown("---")
 
-# --- 底部：全文合并区域 ---
+# --- 底部：全文合并一键导出 ---
 st.header("🚀 全文合并一键导出")
 full_combined_html = "".join(all_blocks_html)
 
 if full_combined_html.strip():
-    st.components.v1.html(f"""
-        <div style="margin-bottom: 20px; text-align: center;">
-            <button onclick="copyFull()" style="padding: 15px 40px; background-color: #07c160; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(7,193,96,0.3);">
-                🔥 点击一键复制“全文”（模块1+2+3）
-            </button>
-            <p id="full_msg" style="color: #07c160; font-weight: bold; margin-top: 10px;"></p>
-        </div>
-        <div style="border: 2px solid #07c160; padding: 20px; background: white;">
-            <div id="full_area">{full_combined_html}</div>
-        </div>
-        <script>
-        function copyFull() {{
-            const node = document.getElementById('full_area');
-            const range = document.createRange();
-            range.selectNode(node);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand('copy');
-            document.getElementById('full_msg').innerText = "✅ 全文已成功复制！可以直接去公众号后台粘贴。";
-            setTimeout(() => {{ document.getElementById('full_msg').innerText = ""; }},
+    # 这里的 JS 代码块使用了分段构建，避免三引号导致的语法错误
+    copy_button_html = f"""
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button onclick="copyFull()" style="padding: 15px 40px; background-color: #07c160; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; box-shadow: 0 4px 10px rgba(7,193,96,0.3);">
+            🔥 点击一键复制“全文”
+        </button>
+        <p id="full_msg" style="color: #07c160; font-weight: bold; margin-top: 10px;"></p>
+    </div>
+    <div style="border: 2px solid #07c160; padding: 20px; background: white;">
+        <div id="full_area">{full_combined_html}</div>
+    </div>
+    <script>
+    function copyFull() {{
+        var node = document.getElementById('full_area');
+        var range = document.createRange();
+        range.selectNode(node);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        document.execCommand('copy');
+        document.getElementById('full_msg').innerText = "✅ 全文已成功复制！";
+        setTimeout(function(){{ document.getElementById('full_msg').innerText = ""; }}, 3000);
+        window.getSelection().removeAllRanges();
+    }}
+    </script>
+    """
+    st.components.v1.html(copy_button_html, height=1000, scrolling=True)
+else:
+    st.info("在上方输入内容后，此处将自动汇总。")
